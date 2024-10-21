@@ -1,8 +1,12 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas import Book, BookCreate
 from app.crud import create_book, get_book, get_books
-from app.dependencies import get_db
+from app.dependencies import get_db, admin_required
+from db import models
+
 
 router = APIRouter()
 
@@ -10,23 +14,34 @@ router = APIRouter()
 # Endpoints for Books
 # ------------------------------------
 
+
 @router.post("/books/", response_model=Book)
 async def create_book_endpoint(
-    book: BookCreate, db: Session = Depends(get_db)
+    book: BookCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(admin_required),
 ) -> Book:
     """Create a new book."""
     return create_book(db=db, book=book)
+
 
 @router.get("/books/", response_model=list[Book])
 async def get_books_endpoint(
     offset: int = 0,
     limit: int = 10,
-    sort_by: str = None,
-    sort_order: str = "asc",
-    db: Session = Depends(get_db)
+    sort_by: Literal["title", "author", "publish_date"] = "title",
+    sort_order: Literal["asc", "desc"] = "asc",
+    db: Session = Depends(get_db),
 ) -> list[Book]:
     """Retrieve a list of books with pagination."""
-    return get_books(db=db, offset=offset, limit=limit, sort_by=sort_by, sort_order=sort_order)
+    return get_books(
+        db=db,
+        offset=offset,
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
 
 @router.get("/books/{book_id}", response_model=Book)
 async def get_book_endpoint(
