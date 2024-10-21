@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: cd6a428c58a9
+Revision ID: 8b82f62f7b71
 Revises: 
-Create Date: 2024-10-19 22:32:13.915187
+Create Date: 2024-10-21 14:20:50.672974
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cd6a428c58a9'
+revision: str = '8b82f62f7b71'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,13 +28,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_authors_id'), 'authors', ['id'], unique=False)
     op.create_index(op.f('ix_authors_name'), 'authors', ['name'], unique=True)
-    op.create_table('borrowers',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_borrowers_id'), 'borrowers', ['id'], unique=False)
-    op.create_index(op.f('ix_borrowers_name'), 'borrowers', ['name'], unique=False)
     op.create_table('genres',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -50,11 +43,22 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_publishers_id'), 'publishers', ['id'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('hashed_password', sa.String(), nullable=False),
+    sa.Column('is_admin', sa.Boolean(), nullable=True),
+    sa.Column('max_books', sa.Integer(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_table('books',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('isbn', sa.String(), nullable=False),
     sa.Column('publish_date', sa.Date(), nullable=False),
+    sa.Column('number_of_copies', sa.Integer(), nullable=False),
     sa.Column('publisher_id', sa.Integer(), nullable=True),
     sa.Column('author_id', sa.Integer(), nullable=False),
     sa.Column('genre_id', sa.Integer(), nullable=False),
@@ -68,11 +72,11 @@ def upgrade() -> None:
     op.create_table('borrowing_history',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('book_id', sa.Integer(), nullable=False),
-    sa.Column('borrower_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('borrow_date', sa.Date(), nullable=False),
     sa.Column('return_date', sa.Date(), nullable=True),
     sa.ForeignKeyConstraint(['book_id'], ['books.id'], ),
-    sa.ForeignKeyConstraint(['borrower_id'], ['borrowers.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_borrowing_history_id'), 'borrowing_history', ['id'], unique=False)
@@ -86,13 +90,13 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_books_title'), table_name='books')
     op.drop_index(op.f('ix_books_id'), table_name='books')
     op.drop_table('books')
+    op.drop_index(op.f('ix_users_id'), table_name='users')
+    op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_table('users')
     op.drop_index(op.f('ix_publishers_id'), table_name='publishers')
     op.drop_table('publishers')
     op.drop_index(op.f('ix_genres_id'), table_name='genres')
     op.drop_table('genres')
-    op.drop_index(op.f('ix_borrowers_name'), table_name='borrowers')
-    op.drop_index(op.f('ix_borrowers_id'), table_name='borrowers')
-    op.drop_table('borrowers')
     op.drop_index(op.f('ix_authors_name'), table_name='authors')
     op.drop_index(op.f('ix_authors_id'), table_name='authors')
     op.drop_table('authors')
